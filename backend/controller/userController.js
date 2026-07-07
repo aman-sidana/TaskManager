@@ -1,12 +1,18 @@
 const userModel = require("../model/userModel")
+const transporter = require('../utils/transporter')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const secretKey = "sfsdgfhjklkadfgshljh"
 
 
 
+
 exports.signup = async (req, res) => {
     try {
+        console.log(`>>>>>req.body`, req.body)
+        // console.log(`>>>>>req.files`, req.files)
+        
+
         const { name, email, password, role } = req.body;
 
         if (!(name && email && password)) {
@@ -18,17 +24,28 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "User already exist" });
         }
 
-        const saltRounds = 10;
 
+        const saltRounds = 10;
         const salt = bcrypt.genSaltSync(saltRounds)
-        console.log(`>>>>>salt`, salt)
+        // console.log(`>>>>>salt`, salt)
 
         const hash = bcrypt.hashSync(password, salt)
-        console.log(`>>>>hash`, hash)
+        // console.log(`>>>>hash`, hash)
+
+  
 
         const result = await userModel.create({
-            name, email, password: hash, role
+            name, email, password: hash, role 
         });
+
+
+        const mail = await transporter.info(
+            email,
+            "signup",
+            `<p>Dear user,</br> you have been scuccessfully signuped to the Task Manager </p>`
+        );
+
+        console.log(mail.messageId);
 
         return res.status(201).json({ message: "User SingUped successfully", result });
     } catch (error) {
@@ -40,7 +57,7 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
     try {
 
-        console.log(">>>>>>", req.body);
+        // console.log(">>>>>>", req.body);
 
         const { email, password } = req.body;
 
@@ -56,7 +73,7 @@ exports.login = async (req, res) => {
         }
 
         const match = await bcrypt.compare(password, user.password)
-        console.log(`....>>>`, match)
+        // console.log(`....>>>`, match)
         if (!match) {
             return res.status(400).json({ message: "password in incorrect" })
         }
@@ -75,48 +92,112 @@ exports.login = async (req, res) => {
             }
         });
     } catch (error) {
-        console.log(`>>>>`, error)
+        // console.log(`>>>>`, error)
         return res.status(500).json({ message: "Server Side Error" });
 
     }
 }
 
-
-
-exports.forgetpassword = async (req, res) => {
+exports.forgetotp = async (req, res) => {
     try {
-        console.log(`>>>>>forogetpass`, req.body)
-        const { email, newpassword, confirmpassword } = req.body
+        const { email } = req.body;
 
-        if (!(email && newpassword && confirmpassword)) {
-            return res.status(400).json({ message: "all fields are required " })
+        if (!email) {
+            return res.status(400).json({
+                message: "Email is required"
+            });
         }
-        const user = await userModel.findOne({ email })
+
+        const user = await userModel.findOne({ email });
+
         if (!user) {
-            return res.status(404).json({ message: "no user found" })
+            return res.status(404).json({
+                message: "User not found"
+            });
         }
-        if (newpassword !== confirmpassword) {
-            return res.status(400).json({ message: "newpassword and confirmpasword are not matching" })
-        }
-        const saltRounds = 10
-        const salt = bcrypt.genSaltSync(saltRounds);
-        const hash = bcrypt.hashSync(newpassword, salt)
 
-        user.password = hash
-        await user.save()
+        const sentotp = transporter.otp();
+
+        user.otp = sentotp;
+        user.expireTime = Date.now() + 5 * 60 * 1000;
+
+        await user.save();
+
+        const mail = await transporter.info(
+            email,
+            "Forgot Password OTP",
+            `
+                <h2>Password Reset</h2>
+
+                <p>Your OTP is:</p>
+
+                <h1>${sentotp}</h1>
+
+                <p>This OTP is valid for 5 minutes.</p>
+            `
+        );
+
+        console.log(mail.messageId);
 
         return res.status(200).json({
-            message: "Password updated successfully"
+            message: "OTP sent successfully"
         });
 
-    }
-    catch (error) {
-        console.log(error)
+    } catch (error) {
+        console.log(error);
+
         return res.status(500).json({
-            message: "internal server error"
-        })
+            message: "Internal server error"
+        });
     }
-}
+};
+
+exports.forgetpassword = async (req, res) => {
+    const { email, otp, newpassword, confirmpassword } = req.body;
+    if (!(email && otp && newpassword && confirmpassword)) {
+        return res.status(400).json({
+            message: "All fields are required"
+        });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({
+            message: "User not found"
+        });
+    }
+
+    if (user.otp !== Number(otp)) {
+        return res.status(400).json({
+            message: "Invalid OTP"
+        });
+    }
+
+    if (user.expireTime < Date.now()) {
+        return res.status(400).json({
+            message: "OTP expired"
+        });
+    }
+
+    if (newpassword !== confirmpassword) {
+        return res.status(400).json({ message: "all fields are required " })
+    }
+
+    const saltRounds = 10
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hash = bcrypt.hashSync(newpassword, salt)
+
+    user.password = hash
+
+    user.otp = null;
+    user.expireTime = null;
+
+    await user.save()
+    return res.status(200).json({
+        message: "password changed successfully"
+    });
+};
 
 
 exports.resetpassword = async (req, res) => {

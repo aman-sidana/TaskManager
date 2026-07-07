@@ -8,6 +8,7 @@ import Forgetpassword from './Forgetpassword'
 import InactiveTask from './InactiveTask'
 import Home from './Home'
 import ProtectedRoute from './ProtectedRoute'
+import DateCalender from './DateCalender'
 import AddTask from './AddTask'
 import "./App.css"
 
@@ -37,6 +38,7 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/forget' element={<Forgetpassword />} />
         <Route path='/addtask' element={<AddTask />} />
+        <Route path='/datepick' element={<DateCalender />} />
         
       </Routes>
     </BrowserRouter>

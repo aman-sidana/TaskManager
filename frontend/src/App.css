@@ -835,6 +835,105 @@ tr.task-due-after {
   background: rgba(220, 38, 38, 0.06);
 }
 
+/* ----------------------------------------------------
+   Date Calendar Modal & Backdrop Overlay Styles
+------------------------------------------------------- */
+.calendar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.75); /* Blurred dark accent overlay */
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Stays securely on top of headers, sticky tables & grids */
+  padding: 20px;
+  animation: fadeUp 220ms ease both;
+}
+
+.calendar-modal {
+  position: relative;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 28px 24px 24px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto; /* Vertically scroll inside the modal if many tasks are returned */
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calendar-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+  padding: 4px;
+  transition: color 150ms ease;
+}
+
+.calendar-close-btn:hover {
+  color: var(--danger);
+}
+
+.calendar-modal h3 {
+  margin: 12px 0 4px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* React Datepicker styling integration inside our modal container */
+.calendar-modal .react-datepicker {
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface-soft) !important;
+  font-family: inherit !important;
+  border-radius: var(--radius-sm) !important;
+  margin: 0 auto !important;
+  display: block;
+}
+
+.calendar-modal .react-datepicker__header {
+  background-color: var(--bg-strong) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.calendar-modal .react-datepicker__current-month,
+.calendar-modal .react-datepicker__day-name {
+  color: var(--text) !important;
+  font-weight: 800;
+}
+
+.calendar-modal .react-datepicker__day {
+  color: var(--text) !important;
+}
+
+.calendar-modal .react-datepicker__day:hover {
+  background-color: rgba(37, 99, 235, 0.15) !important;
+  border-radius: var(--radius-sm);
+}
+
+.calendar-modal .react-datepicker__day--selected {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+  font-weight: 900;
+  border-radius: var(--radius-sm);
+}
+
+/* Animations & Screen Rules */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -929,5 +1028,10 @@ tr.task-due-after {
 
   .task-list {
     grid-template-columns: 1fr;
+  }
+  
+  .calendar-modal {
+    padding: 20px 16px;
+    max-height: 90vh;
   }
 }

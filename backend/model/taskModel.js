@@ -28,8 +28,11 @@ const taskSchema = new mongoose.Schema({
     assignedby: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "useroftask"
+    },
+    images:{
+        type:String,
+        default:""
     }
-
 }, {
     timestamps: true
 });

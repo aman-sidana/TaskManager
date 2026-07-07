@@ -1,13 +1,17 @@
 const mongoose = require("mongoose")
 const express = require("express")
 const cors = require("cors")
+const fileUpload = require('express-fileupload')
+
 
 const app = express()
 const port = 6100
 const url = "mongodb://localhost:27017/CRUDoperations"
 
-app.use(express.json())
 app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload())
 
 
 mongoose
@@ -18,6 +22,8 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+
+
 
 const userRouter = require("./route/userRoute")
 app.use('/taskuser', userRouter)

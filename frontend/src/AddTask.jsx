@@ -13,7 +13,8 @@ function AddTask() {
     taskName: "",
     status: "pending",
     assignedto: "",
-    duedate: ""
+    duedate: "",
+    images: ""
   });
 
   useEffect(() => {
@@ -21,8 +22,9 @@ function AddTask() {
       setForm({
         taskName: editData.taskName,
         status: editData.status,
-        assignedto: editData.user_id?._id || editData.user_id || "",
-        duedate: editData.duedate ? editData.duedate.split("T")[0] : ""
+        assignedto: editData.assignedto?._id || editData.assignedto || "",
+        duedate: editData.duedate ? editData.duedate.split("T")[0] : "",
+        images: editData.images || "",
       });
     }
   }, [editData]);
@@ -44,21 +46,36 @@ function AddTask() {
     e.preventDefault();
 
     try {
-      await axios.post(
+      const formData = new FormData();
+
+      formData.append("taskName", form.taskName);
+      formData.append("status", form.status);
+      formData.append("assignedto", form.assignedto);
+      formData.append("duedate", form.duedate);
+
+      if (form.images) {
+        formData.append("image", form.images);
+      }
+
+      const result = await axios.post(
         "http://localhost:6100/task/addtask",
-        form,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
+
+      console.log(result.data);
 
       setForm({
         taskName: "",
         status: "pending",
         assignedto: "",
-        duedate: ""
+        duedate: "",
+        images: "",
       });
 
       navigate("/tasks");
@@ -72,12 +89,24 @@ function AddTask() {
     e.preventDefault();
 
     try {
+      const formData = new FormData();
+
+      formData.append("taskName", form.taskName);
+      formData.append("status", form.status);
+      formData.append("assignedto", form.assignedto);
+      formData.append("duedate", form.duedate);
+
+      if (form.images instanceof File) {
+        formData.append("image", form.images);
+      }
+
       await axios.patch(
         `http://localhost:6100/task/updatetask/${editData._id}`,
-        form,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -110,7 +139,7 @@ function AddTask() {
     <div>
       <div>
         <button className="btn btn-logout-nav" onClick={() => navigate(-1)}>
-         ⬅ Back
+          ⬅ Back
         </button>
       </div>
       <div className="form-container">
@@ -149,6 +178,21 @@ function AddTask() {
               </option>
             ))}
           </select>
+
+          <br />
+          <br />
+
+          <input
+            type="file"
+            name="images"
+            onChange={(e) =>
+              setForm({
+                ...form,
+                images: e.target.files[0],
+              })
+            }
+          />
+
           <br />
           <br />
 

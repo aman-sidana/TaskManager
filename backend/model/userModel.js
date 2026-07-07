@@ -16,15 +16,22 @@ const authSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    role:{
-        type:String,
-        default :"user"
-        
+    role: {
+        type: String,
+        default: "user"
+
     },
-    theme:{
-        type:String,
-        default:"light"
+    theme: {
+        type: String,
+        default: "light"
+    },
+    otp: {
+        type: Number,
+    },
+    expireTime: {
+        type: Number
     }
+
 })
 
 module.exports = mongoose.model('useroftask', authSchema)

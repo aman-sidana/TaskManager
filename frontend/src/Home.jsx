@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useTable from "./useTable";
 import moment from 'moment'
+import DateCalender from "./DateCalender";
 
 function Home() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ function Home() {
   const [searching, setSearching] = useState('');
   const [sorting, setsorting] = useState('');
   const [selectedAssignedBy, setSelectedAssignedBy] = useState("");
+  const [showCalender,setshowCalender]=useState(false)
 
   const { table, tableview } = useTable()
 
@@ -110,7 +112,7 @@ function Home() {
     } catch (error) {
       console.log(error.response?.data || error.message);
     }
-  }; 
+  };
 
   const softdelete = async (id) => {
     try {
@@ -263,10 +265,10 @@ function Home() {
 
     return "task-due-before";
   };
-  
+
   return (
     <div className="home-container">
- 
+
 
       <div className="filter-controls-container">
         <input
@@ -309,9 +311,12 @@ function Home() {
       </div>
 
       <div className="action-buttons-bar">
-        <button className="btn btn-filter" onClick={assignedToMe}>
-          My Tasks
-        </button>
+
+        {userrole !== "admin" &&
+          <button className="btn btn-filter" onClick={assignedToMe}>
+            My Tasks
+          </button>
+        }
         <button className="btn btn-filter" onClick={assignedByMe}>
           Tasks By Me
         </button>
@@ -325,23 +330,33 @@ function Home() {
         <button className="btn btn-add-task" onClick={() => { navigate("/addtask") }}>
           Assign Task
         </button>
+
         <button className="btn btn-logout-nav" onClick={logout}>
           Logout
         </button>
+        <div >
+          <button className="btn btn-add-task" onClick={()=>setshowCalender(!showCalender)}>
+           calender
+          </button>
+         
+        </div>
+
       </div>
+
+
       {loading ? (
         <h2 className="loading-text">Loading...</h2>
       ) : table === "card" ? (
         <div className="task-list">
           {data.map((a) =>
-          
-           (
+
+          (
             <div key={a._id} className={`task-card ${getCardColor(a)}`}>
               <div>
                 {/* <p className="task-info">
                   <strong>Task Id:</strong> {a._id}
                 </p> */}
-
+                <img src={a.images} width="250px"/>
                 <p className="task-info">
                   <strong>Task Name:</strong> {a.taskName}
                 </p>
@@ -478,6 +493,7 @@ function Home() {
           </table>
         </div>
       )}
+       <DateCalender showCalender={showCalender} setshowCalender={setshowCalender} tasks={data}/>
     </div>
   );
 }
