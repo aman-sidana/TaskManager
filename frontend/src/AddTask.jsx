@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+
+const getTaskForm = (task) => ({
+  taskName: task?.taskName || "",
+  status: task?.status || "pending",
+  assignedto: task?.assignedto?._id || task?.assignedto || "",
+  duedate: task?.duedate ? task.duedate.split("T")[0] : "",
+  images: task?.images || ""
+});
 
 function AddTask() {
   const location = useLocation();
@@ -9,31 +17,7 @@ function AddTask() {
 
   const editData = location.state?.a;
 
-  const [form, setForm] = useState({
-    taskName: "",
-    status: "pending",
-    assignedto: "",
-    duedate: "",
-    images: ""
-  });
-
-  useEffect(() => {
-    if (editData) {
-      setForm({
-        taskName: editData.taskName,
-        status: editData.status,
-        assignedto: editData.assignedto?._id || editData.assignedto || "",
-        duedate: editData.duedate ? editData.duedate.split("T")[0] : "",
-        images: editData.images || "",
-      });
-    }
-  }, [editData]);
-
-  useEffect(() => {
-    getalluser();
-  }, []);
-
-
+  const [form, setForm] = useState(() => getTaskForm(editData));
 
   const handleChange = (e) => {
     setForm({
@@ -117,22 +101,35 @@ function AddTask() {
     }
   };
 
-  const getalluser = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const result = await axios.get("http://localhost:6100/taskuser/getalluser",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
+  useEffect(() => {
+    let ignore = false;
+
+    const getalluser = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const result = await axios.get("http://localhost:6100/taskuser/getalluser",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
+        );
+        console.log(`>>>>resultaddtask`, result);
+
+        if (!ignore) {
+          setUsers(result.data);
         }
-      );
-      console.log(`>>>>resultaddtask`, result);
-      setUsers(result.data);
-    } catch (error) {
-      console.log("Error fetching users:", error);
+      } catch (error) {
+        console.log("Error fetching users:", error);
+      }
     }
-  }
+
+    getalluser();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   console.log(form)
   return (

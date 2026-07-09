@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const userModel = require("../model/userModel");
+const { verifyFirebaseIdToken } = require("../utils/firebase");
 
 const secretKey = "sfsdgfhjklkadfgshljh";
 
@@ -25,11 +26,39 @@ module.exports = async (req, res, next) => {
       });
     }
 
-    const decode = jwt.verify(token, secretKey);
+    let userDetail = null;
 
-    const userDetail = await userModel.findOne({
-      email: decode.email,
-    });
+    try {
+      const decode = jwt.verify(token, secretKey);
+
+      userDetail = await userModel.findOne({
+        email: decode.email,
+      });
+    } catch (jwtError) {
+      try {
+        const firebaseUser = await verifyFirebaseIdToken(token);
+
+        const firebaseUserQuery = [];
+
+        if (firebaseUser?.email) {
+          firebaseUserQuery.push({ email: firebaseUser.email });
+        }
+
+        if (firebaseUser?.localId) {
+          firebaseUserQuery.push({ firebaseUid: firebaseUser.localId });
+        }
+
+        if (firebaseUserQuery.length) {
+          userDetail = await userModel.findOne({
+            $or: firebaseUserQuery
+          });
+        }
+      } catch (firebaseError) {
+        return res.status(401).json({
+          message: "Invalid token",
+        });
+      }
+    }
 
     if (!userDetail) {
       return res.status(404).json({

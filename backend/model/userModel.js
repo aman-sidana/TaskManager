@@ -16,6 +16,10 @@ const authSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    firebaseUid: {
+        type: String,
+        default: ""
+    },
     role: {
         type: String,
         default: "user"
@@ -31,7 +35,7 @@ const authSchema = new mongoose.Schema({
     expireTime: {
         type: Number
     }
-
+    
 })
 
 module.exports = mongoose.model('useroftask', authSchema)

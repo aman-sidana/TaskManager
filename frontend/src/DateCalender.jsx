@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 
-function DateCalender({ showCalender, setshowCalender, tasks }) {
+function DateCalender({ showCalender = true, setshowCalender = () => {}, tasks = [] }) {
   const [startDate, setStartDate] = useState(new Date());
 
   if (!showCalender) return null;

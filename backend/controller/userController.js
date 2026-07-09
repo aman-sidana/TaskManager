@@ -2,7 +2,22 @@ const userModel = require("../model/userModel")
 const transporter = require('../utils/transporter')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
+const { createFirebaseUser, loginFirebaseUser, verifyFirebaseIdToken, firebaseErrorMessage } = require('../utils/firebase');
 const secretKey = "sfsdgfhjklkadfgshljh"
+const os = require("os");
+
+const userResponse = (user) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+});
+
+const makeToken = (user) => jwt.sign(
+    { email: user.email },
+    secretKey,
+    { expiresIn: "5h" }
+);
 
 
 
@@ -24,6 +39,13 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "User already exist" });
         }
 
+        let firebaseUser = null;
+
+        try {
+            firebaseUser = await createFirebaseUser(email, password);
+        } catch (error) {
+            console.log("Firebase signup skipped:", error.code || error.message);
+        }
 
         const saltRounds = 10;
         const salt = bcrypt.genSaltSync(saltRounds)
@@ -35,7 +57,7 @@ exports.signup = async (req, res) => {
   
 
         const result = await userModel.create({
-            name, email, password: hash, role 
+            name, email, password: hash, role, firebaseUid: firebaseUser?.localId || ""
         });
 
 
@@ -47,7 +69,11 @@ exports.signup = async (req, res) => {
 
         console.log(mail.messageId);
 
-        return res.status(201).json({ message: "User SingUped successfully", result });
+        return res.status(201).json({
+            message: "User SingUped successfully",
+            result,
+            firebaseLinked: Boolean(firebaseUser)
+        });
     } catch (error) {
         console.log(`>>>error`, error)
         return res.status(500).json({ message: "Server Side Error" });
@@ -64,32 +90,60 @@ exports.login = async (req, res) => {
         if (!(email && password)) {
             return res.status(400).json({ message: "Email and Password are required" });
         }
-        const user = await userModel.findOne({ email });
+
+        let firebaseUser;
+        let firebaseLoginError;
+
+        try {
+            firebaseUser = await loginFirebaseUser(email, password);
+        } catch (error) {
+            firebaseLoginError = error;
+        }
+
+        let user = await userModel.findOne({ email });
 
         console.log(">>>>user", user);
 
-        if (!user) {
-            return res.status(404).json({ message: "No Data Found. SignUp First" });
+        if (!firebaseUser) {
+            if (!user) {
+                return res.status(404).json({
+                    message: firebaseErrorMessage(firebaseLoginError?.code || "EMAIL_NOT_FOUND")
+                });
+            }
+
+            const match = await bcrypt.compare(password, user.password)
+            // console.log(`....>>>`, match)
+            if (!match) {
+                return res.status(400).json({
+                    message: firebaseErrorMessage(firebaseLoginError?.code || "INVALID_PASSWORD")
+                })
+            }
         }
 
-        const match = await bcrypt.compare(password, user.password)
-        // console.log(`....>>>`, match)
-        if (!match) {
-            return res.status(400).json({ message: "password in incorrect" })
+        if (firebaseUser && !user) {
+            const saltRounds = 10;
+            const salt = bcrypt.genSaltSync(saltRounds);
+            const hash = bcrypt.hashSync(password, salt);
+
+            user = await userModel.create({
+                name: firebaseUser.displayName || email.split("@")[0],
+                email,
+                password: hash,
+                firebaseUid: firebaseUser.localId
+            });
         }
 
-        const token = jwt.sign(
-            { email: user.email },
-            secretKey, { expiresIn: "5h" }
-        );
+        if (firebaseUser && user && !user.firebaseUid) {
+            user.firebaseUid = firebaseUser.localId;
+            await user.save();
+        }
+
+        
+        const token = makeToken(user);
         return res.status(200).json({
             message: "Login Successful", token,
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
+            user: userResponse(user),
+            firebaseLinked: Boolean(user.firebaseUid)
         });
     } catch (error) {
         // console.log(`>>>>`, error)
@@ -309,3 +363,57 @@ exports.getTheme = async (req, res) => {
         });
     }
 };
+
+
+exports.googleLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({
+                message: "Firebase token is required"
+            });
+        }
+
+        const firebaseUser = await verifyFirebaseIdToken(idToken);
+
+        if (!firebaseUser?.email) {
+            return res.status(401).json({
+                message: "Invalid Google account"
+            });
+        }
+
+        let user = await userModel.findOne({ email: firebaseUser.email });
+
+        if (!user) {
+            const randomPassword = `${firebaseUser.localId}${Date.now()}`;
+            const hash = bcrypt.hashSync(randomPassword, bcrypt.genSaltSync(10));
+
+            user = await userModel.create({
+                name: firebaseUser.displayName || firebaseUser.email.split("@")[0],
+                email: firebaseUser.email,
+                password: hash,
+                firebaseUid: firebaseUser.localId
+            });
+        }
+
+        if (!user.firebaseUid) {
+            user.firebaseUid = firebaseUser.localId;
+            await user.save();
+        }
+
+        const token = makeToken(user);
+
+        return res.status(200).json({
+            message: "Google login successful",
+            token,
+            user: userResponse(user)
+        });
+    } catch (error) {
+        console.log(error);
+
+        return res.status(500).json({
+            message: "Google login failed"
+        });
+    }
+}

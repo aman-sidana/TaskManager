@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useTable from "./useTable";
@@ -14,7 +14,7 @@ function Home() {
   const [searching, setSearching] = useState('');
   const [sorting, setsorting] = useState('');
   const [selectedAssignedBy, setSelectedAssignedBy] = useState("");
-  const [showCalender,setshowCalender]=useState(false)
+  const [showCalender, setshowCalender] = useState(false)
 
   const { table, tableview } = useTable()
 
@@ -62,7 +62,7 @@ function Home() {
       }
     };
     fetchdata();
-  }, []);
+  }, [navigate]);
 
   const [tome, setTome] = useState('')
 
@@ -266,6 +266,56 @@ function Home() {
     return "task-due-before";
   };
 
+  const downloadPDF = async () => {
+
+    try {
+
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        "http://localhost:6100/task/downloadpdf",
+
+        {
+          title: "Task Report",
+          tasks: data
+        },
+
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          responseType: "blob"
+        }
+
+      );
+
+      const blob = new Blob(
+        [response.data],
+        {
+          type: "application/pdf"
+        }
+      );
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.download = "Tasks.pdf";
+
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
   return (
     <div className="home-container">
 
@@ -328,18 +378,23 @@ function Home() {
         }
 
         <button className="btn btn-add-task" onClick={() => { navigate("/addtask") }}>
-          Assign Task
+          ✚
         </button>
 
         <button className="btn btn-logout-nav" onClick={logout}>
           Logout
         </button>
-        <div >
-          <button className="btn btn-add-task" onClick={()=>setshowCalender(!showCalender)}>
-           calender
-          </button>
-         
-        </div>
+
+        <button className="btn btn-add-task" onClick={() => setshowCalender(!showCalender)}>
+          📅
+        </button>
+
+        <button
+          className="btn btn-add-task"
+          onClick={downloadPDF}
+        >
+          🡇 pdf
+        </button>
 
       </div>
 
@@ -356,7 +411,13 @@ function Home() {
                 {/* <p className="task-info">
                   <strong>Task Id:</strong> {a._id}
                 </p> */}
-                <img src={a.images} width="250px"/>
+                {a.images && (
+                  <img
+                    src={a.images}
+                    alt="Task"
+                    width="250"
+                  />
+                )}
                 <p className="task-info">
                   <strong>Task Name:</strong> {a.taskName}
                 </p>
@@ -374,14 +435,12 @@ function Home() {
 
                 <p className="task-info">
                   <strong>Status:</strong>{" "}
-                  <span
-                    className={`status-badge ${a.status?.toLowerCase() || "pending"
-                      }`}
-                  >
+                  <span className={`status-badge ${a.status?.toLowerCase() || "pending"}`}>
                     {a.status}
                   </span>
                 </p>
               </div>
+              {/* console.log({a.images}) */}
 
               <div className="task-actions">
                 {!tome && (
@@ -493,7 +552,7 @@ function Home() {
           </table>
         </div>
       )}
-       <DateCalender showCalender={showCalender} setshowCalender={setshowCalender} tasks={data}/>
+      <DateCalender showCalender={showCalender} setshowCalender={setshowCalender} tasks={data} />
     </div>
   );
 }

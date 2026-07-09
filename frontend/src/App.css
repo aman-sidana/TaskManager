@@ -569,6 +569,45 @@ body.dark .form-container {
   background: linear-gradient(135deg, var(--primary), #1d4ed8);
 }
 
+.google-auth-btn {
+  display: inline-flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-weight: 900;
+  cursor: pointer;
+  transition: 180ms ease;
+  transition-property: transform, box-shadow, border-color, background;
+}
+
+.google-auth-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.38);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.google-auth-icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4285f4;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
 .btn-filter {
   border: 1px solid var(--border);
   background: var(--surface-solid);

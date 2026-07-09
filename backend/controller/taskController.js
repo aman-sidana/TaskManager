@@ -2,8 +2,102 @@ const taskModel = require("../model/taskModel");
 const transporter = require("../utils/transporter");
 const userModel = require('../model/userModel')
 const { uploadImage } = require("../utils/cloudinary")
-
 const googleTTS = require('google-tts-api')
+const { doc } = require("../utils/pdf");
+const moment = require("moment");
+
+exports.downloadPdf = async (req, res) => {
+
+    try {
+
+        // const { tasks, title } = req.body;
+
+        const { tasks = [], title = "Task Report" } = req.body;
+
+        if (!Array.isArray(tasks) || tasks.length === 0) {
+            return res.status(400).json({
+                message: "No tasks received"
+            });
+        }
+
+        const pdf = doc();
+
+        pdf.setFontSize(18);
+        pdf.text(title || "Task Report", 70, 15);
+
+        pdf.setFontSize(10);
+        pdf.text(
+            `Generated : ${moment().format("DD-MM-YYYY HH:mm")}`,
+            10,
+            25
+        );
+
+        let y = 35;
+
+        pdf.setFontSize(12);
+
+        tasks.forEach((task, index) => {
+
+            pdf.text(`${index + 1}. ${task.taskName}`, 10, y);
+            y += 7;
+
+            pdf.text(
+                `Assigned To : ${task.assignedto?.name || ""}`,
+                15,
+                y
+            );
+            y += 7;
+
+            pdf.text(
+                `Assigned By : ${task.assignedby?.name || ""}`,
+                15,
+                y
+            );
+            y += 7;
+
+            pdf.text(
+                `Status : ${task.status}`,
+                15,
+                y
+            );
+            y += 7;
+
+            pdf.text(
+                `Due Date : ${moment(task.duedate).format("DD-MM-YYYY")}`,
+                15,
+                y
+            );
+
+            y += 12;
+
+            if (y > 270) {
+                pdf.addPage();
+                y = 20;
+            }
+
+        });
+
+        const buffer = Buffer.from(pdf.output("arraybuffer"));
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            "attachment; filename=Tasks.pdf"
+        );
+
+        res.send(buffer);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Unable to generate PDF"
+        });
+
+    }
+
+};
 
 
 exports.addTask = async (req, res) => {
@@ -131,9 +225,19 @@ exports.updatetask = async (req, res) => {
             });
         }
 
+        const updateData = { ...req.body };
+
+        if (req.files) {
+            const uploadData = await uploadImage(req.files);
+
+            if (uploadData[0]?.url) {
+                updateData.images = uploadData[0].url;
+            }
+        }
+
         const result = await taskModel.findByIdAndUpdate(
             id,
-            req.body,
+            updateData,
             { new: true }
         );
 

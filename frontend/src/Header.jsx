@@ -1,24 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import useTheme from "./useTheme";
 
 function Header() {
-  const location = useLocation();
   const navigate = useNavigate();
 
-  const [token, setToken] = useState(localStorage.getItem("token"));
   const [profileOpen, setProfileOpen] = useState(false);
 
   const { theme, changeTheme } = useTheme();
+  const token = localStorage.getItem("token");
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const userInitial = currentUser?.name?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || "U";
 
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-    setProfileOpen(false);
-  }, [location]);
-
-  
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
@@ -30,7 +23,6 @@ function Header() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setToken(null);
     setProfileOpen(false);
     navigate("/login");
   };
@@ -97,7 +89,7 @@ function Header() {
 
                 <p className="profile-email">{currentUser?.email}</p>
 
-                <Link className="profile-menu-item" to="/reset">
+                <Link className="profile-menu-item" to="/reset" onClick={() => setProfileOpen(false)}>
                   Reset Password
                 </Link>
 

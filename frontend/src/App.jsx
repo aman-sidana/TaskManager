@@ -1,4 +1,3 @@
-import React from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Header from './Header'
 import Login from './Login'
@@ -37,8 +36,16 @@ function App() {
         <Route path='/signup' element={<Signup />} />
         <Route path='/login' element={<Login />} />
         <Route path='/forget' element={<Forgetpassword />} />
-        <Route path='/addtask' element={<AddTask />} />
-        <Route path='/datepick' element={<DateCalender />} />
+        <Route path='/addtask' element={
+          <ProtectedRoute>
+            <AddTask />
+          </ProtectedRoute>
+        } />
+        <Route path='/datepick' element={
+          <ProtectedRoute>
+            <DateCalender />
+          </ProtectedRoute>
+        } />
         
       </Routes>
     </BrowserRouter>

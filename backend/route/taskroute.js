@@ -12,7 +12,7 @@ router.patch("/restoretask/:id", auth, taskController.restoretask);
 router.delete("/deletetask/:id", auth, taskController.deletetask);
 router.patch("/statusdone/:id", auth, taskController.statusdone);
 
-// router.get("/downloadpdf", auth, taskController.downloadPDF);
+router.post("/downloadpdf", auth, taskController.downloadPdf);
 
 router.get("/tts", taskController.tts);
 

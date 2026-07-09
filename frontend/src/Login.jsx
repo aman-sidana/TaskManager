@@ -1,6 +1,9 @@
-import React, { useState } from 'react'
+import { useCallback, useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from './firebaseconfig'
+import firebaseAuthError from './firebaseAuthError'
 
 function Login() {
     const navigate = useNavigate();
@@ -11,6 +14,12 @@ function Login() {
         const { name, value } = e.target
         setForm({ ...form, [name]: value })
     }
+
+    const saveLoginData = useCallback((data) => {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate('/tasks')
+    }, [navigate])
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -24,9 +33,7 @@ function Login() {
             console.log(`>>>>authlogin`, result.data)
             const token = result?.data?.token
             if (token) {
-                localStorage.setItem('token', token)
-                localStorage.setItem("user", JSON.stringify(result.data.user));
-                navigate('/tasks')
+                saveLoginData(result.data)
                 setForm({ email: "", password: "" })
             } else {
                 setError("password is incorrect")
@@ -38,6 +45,19 @@ function Login() {
             } else {
                 setError("Something went wrong");
             }
+        }
+    }
+
+    async function handleGoogleLogin() {
+        try {
+            setError("")
+            const googleResult = await signInWithPopup(auth, googleProvider)
+            const idToken = await googleResult.user.getIdToken()
+            const result = await axios.post('http://localhost:6100/taskuser/google-login', { idToken })
+            saveLoginData(result.data)
+        } catch (error) {
+            console.log("Google Login Error:", error.response?.data || error.message);
+            setError(error.response?.data?.message || firebaseAuthError(error, "Google login failed"))
         }
     }
 
@@ -63,6 +83,10 @@ function Login() {
                 />
                 {error && <p className="auth-error-msg">{error}</p>}
                 <button type="submit" className="auth-btn">Login</button>
+                <button type="button" className="google-auth-btn" onClick={handleGoogleLogin}>
+                    <span className="google-auth-icon">G</span>
+                    Continue with Google
+                </button>
                 <p onClick={() => navigate('/forget')} className="auth-link-text">Forget Password ?</p>
 
                 <p onClick={() => navigate('/signup')} className="auth-link-text">Don't have a account ? <br />create account ?</p>

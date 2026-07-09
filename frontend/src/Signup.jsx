@@ -1,7 +1,9 @@
-import React from 'react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from './firebaseconfig'
+import firebaseAuthError from './firebaseAuthError'
 
 function Signup() {
     const navigate = useNavigate()
@@ -19,10 +21,17 @@ function Signup() {
         setForm({ ...form, [name]: value })
     }
 
+    const saveLoginData = useCallback((data) => {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate('/tasks')
+    }, [navigate])
+
     async function handleSubmit(e) {
         e.preventDefault()
         if (!form.name || !form.email || !form.password) {
             setError("All fields are required")
+            return;
         }
         try {
             const result = await axios.post('http://localhost:6100/taskuser/signUp', form)
@@ -33,7 +42,20 @@ function Signup() {
             setError(error.response?.data?.message)
         }
     }
-0
+
+    async function handleGoogleSignup() {
+        try {
+            setError("")
+            const googleResult = await signInWithPopup(auth, googleProvider)
+            const idToken = await googleResult.user.getIdToken()
+            const result = await axios.post('http://localhost:6100/taskuser/google-login', { idToken })
+            saveLoginData(result.data)
+        } catch (error) {
+            console.log("Google Signup Error:", error.response?.data || error.message);
+            setError(error.response?.data?.message || firebaseAuthError(error, "Google signup failed"))
+        }
+    }
+
     return (
         <div>
             <div>
@@ -70,6 +92,10 @@ function Signup() {
                         className="auth-input"
                     />
                     <button type="submit" className="auth-btn">Sign Up</button>
+                    <button type="button" className="google-auth-btn" onClick={handleGoogleSignup}>
+                        <span className="google-auth-icon">G</span>
+                        Continue with Google
+                    </button>
                     {error && <p className="auth-error-msg">{error}</p>}
                 </form>
 
