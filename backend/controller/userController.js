@@ -20,8 +20,6 @@ const makeToken = (user) => jwt.sign(
 );
 
 
-
-
 exports.signup = async (req, res) => {
     try {
         console.log(`>>>>>req.body`, req.body)
@@ -138,7 +136,7 @@ exports.login = async (req, res) => {
             await user.save();
         }
 
-        
+
         const token = makeToken(user);
         return res.status(200).json({
             message: "Login Successful", token,
